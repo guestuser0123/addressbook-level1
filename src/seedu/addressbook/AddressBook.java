@@ -610,12 +610,24 @@ public class AddressBook {
         return getMessageForPersonsDisplayedSummary(toBeDisplayed);
     }
 
+    /**
+     * Creates a backup file of the current address book.
+     *
+     * @return feedback display message for the operation result
+     */
     private static String executeBackupAddressBook() {
         createBackup();
+        ArrayList<HashMap<String,String>> toBeDisplayed = getAllPersonsInAddressBook();
+        showToUser(toBeDisplayed);
         return MESSAGE_ADDRESSBOOK_BACKEDUP;
     }
 
+    /**
+     * Imports and merges current address book with the latest backed-up copy.
+     * @return feedback display message for the operation result
+     */
     private static String executeImportBackup() {
+        importDataFromBackup();
         return MESSAGE_ADDRESSBOOK_IMPORTED;
     }
 
@@ -1198,11 +1210,13 @@ public class AddressBook {
                 + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_HELP_EXAMPLE);
     }
 
+    /** Returns string for showing 'backup' command usage instruction */
     private static String getUsageInfoForBackupCommand() {
         return String.format(MESSAGE_COMMAND_HELP, COMMAND_BACKUP_WORD, COMMAND_BACKUP_DESC) + LS
                 + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_BACKUP_EXAMPLE) + LS;
     }
 
+    /** Returns string for showing 'import' command usage instruction */
     private static String getUsageInfoForImportCommand() {
         return String.format(MESSAGE_COMMAND_HELP, COMMAND_IMPORT_WORD, COMMAND_IMPORT_DESC) + LS
                 + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_IMPORT_EXAMPLE) + LS;

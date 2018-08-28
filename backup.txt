@@ -1,3 +1,2 @@
-Phil p/1234342 e/123@email.com
-Jane p/93339204 e/jane@jane.com
-Jacob p/0000 e/him@sim.com
+Phil p/123 e/john@john.com
+Janet p/43284 e/janet@sfd.com
