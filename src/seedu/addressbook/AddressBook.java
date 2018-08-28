@@ -61,6 +61,8 @@ public class AddressBook {
      */
     private static final String MESSAGE_ADDED = "New person added: %1$s, Phone: %2$s, Email: %3$s";
     private static final String MESSAGE_ADDRESSBOOK_CLEARED = "Address book has been cleared!";
+    private static final String MESSAGE_ADDRESSBOOK_BACKEDUP = "Backup completed! ";
+    private static final String MESSAGE_ADDRESSBOOK_IMPORTED = "Backup imported!";
     private static final String MESSAGE_COMMAND_HELP = "%1$s: %2$s";
     private static final String MESSAGE_COMMAND_HELP_PARAMETERS = "\tParameters: %1$s";
     private static final String MESSAGE_COMMAND_HELP_EXAMPLE = "\tExample: %1$s";
@@ -123,6 +125,14 @@ public class AddressBook {
     private static final String COMMAND_HELP_DESC = "Shows program usage instructions.";
     private static final String COMMAND_HELP_EXAMPLE = COMMAND_HELP_WORD;
 
+    private static final String COMMAND_BACKUP_WORD = "backup";
+    private static final String COMMAND_BACKUP_DESC = "Backup current address book";
+    private static final String COMMAND_BACKUP_EXAMPLE = COMMAND_BACKUP_WORD;
+
+    private static final String COMMAND_IMPORT_WORD = "import";
+    private static final String COMMAND_IMPORT_DESC = "Import and merge address book from previous backup";
+    private static final String COMMAND_IMPORT_EXAMPLE = COMMAND_IMPORT_WORD;
+
     private static final String COMMAND_EXIT_WORD = "exit";
     private static final String COMMAND_EXIT_DESC = "Exits the program.";
     private static final String COMMAND_EXIT_EXAMPLE = COMMAND_EXIT_WORD;
@@ -183,7 +193,6 @@ public class AddressBook {
 
     /**
      * List of all persons in the address book.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      */
     private static final ArrayList<HashMap<String,String>> ALL_PERSONS = new ArrayList<>();
 
@@ -191,7 +200,6 @@ public class AddressBook {
      * Stores the most recent list of persons shown to the user as a result of a user command.
      * This is a subset of the full list. Deleting persons in the pull list does not delete
      * those persons from this list.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      */
     private static ArrayList<HashMap<String,String>> latestPersonListingView =
             getAllPersonsInAddressBook(); // initial view is of all
@@ -200,6 +208,11 @@ public class AddressBook {
      * The path to the file used for storing person data.
      */
     private static String storageFilePath;
+
+    /**
+     * The path to the file used for creating a backup of the list of person data.
+     */
+    private static String backupFilePath = "backup.txt";
 
     /*
      * NOTE : =============================================================
@@ -357,6 +370,14 @@ public class AddressBook {
         initialiseAddressBookModel(loadPersonsFromFile(storageFilePath));
     }
 
+    /**
+     * Imports and merges current in-memory data with data stored in the backup file.
+     * Assumption: The backup file exists.
+     */
+    private static void importDataFromBackup() {
+        mergeBackupAddressBookModel(loadPersonsFromFile((backupFilePath)));
+    }
+
 
     /*
      * ===========================================
@@ -387,6 +408,10 @@ public class AddressBook {
                 return executeClearAddressBook();
             case COMMAND_HELP_WORD:
                 return getUsageInfoForAllCommands();
+            case COMMAND_BACKUP_WORD:
+                return executeBackupAddressBook();
+            case COMMAND_IMPORT_WORD:
+                return executeImportBackup();
             case COMMAND_EXIT_WORD:
                 executeExitProgramRequest();
             default:
@@ -417,7 +442,6 @@ public class AddressBook {
     /**
      * Adds a person (specified by the command args) to the address book.
      * The entire command arguments string is treated as a string representation of the person to add.
-     * MODIFIED: Optional<String[]> into Optional<HashMap<>>.
      *
      * @param commandArgs full command args string from the user
      * @return feedback display message for the operation result
@@ -439,7 +463,6 @@ public class AddressBook {
 
     /**
      * Constructs a feedback message for a successful add person command execution.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @see #executeAddPerson(String)
      * @param addedPerson person who was successfully added
@@ -453,7 +476,6 @@ public class AddressBook {
     /**
      * Finds and lists all persons in address book whose name contains any of the argument keywords.
      * Keyword matching is case sensitive.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param commandArgs full command args string from the user
      * @return feedback display message for the operation result
@@ -467,7 +489,6 @@ public class AddressBook {
 
     /**
      * Constructs a feedback message to summarise an operation that displayed a listing of persons.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param personsDisplayed used to generate summary
      * @return summary message for persons displayed
@@ -488,7 +509,6 @@ public class AddressBook {
 
     /**
      * Retrieves all persons in the full model whose names contain some of the specified keywords.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param keywords for searching
      * @return list of persons in full model with name containing some of the keywords
@@ -506,7 +526,6 @@ public class AddressBook {
 
     /**
      * Deletes person identified using last displayed index.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param commandArgs full command args string from the user
      * @return feedback display message for the operation result
@@ -561,7 +580,6 @@ public class AddressBook {
 
     /**
      * Constructs a feedback message for a successful delete person command execution.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @see #executeDeletePerson(String)
      * @param deletedPerson successfully deleted
@@ -583,7 +601,6 @@ public class AddressBook {
 
     /**
      * Displays all persons in the address book to the user; in added order.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @return feedback display message for the operation result
      */
@@ -591,6 +608,15 @@ public class AddressBook {
         ArrayList<HashMap<String,String>> toBeDisplayed = getAllPersonsInAddressBook();
         showToUser(toBeDisplayed);
         return getMessageForPersonsDisplayedSummary(toBeDisplayed);
+    }
+
+    private static String executeBackupAddressBook() {
+        createBackup();
+        return MESSAGE_ADDRESSBOOK_BACKEDUP;
+    }
+
+    private static String executeImportBackup() {
+        return MESSAGE_ADDRESSBOOK_IMPORTED;
     }
 
     /**
@@ -641,7 +667,6 @@ public class AddressBook {
     /**
      * Shows the list of persons to the user.
      * The list will be indexed, starting from 1.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      */
     private static void showToUser(ArrayList<HashMap<String,String>> persons) {
@@ -652,7 +677,6 @@ public class AddressBook {
 
     /**
      * Returns the display string representation of the list of persons.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      */
     private static String getDisplayString(ArrayList<HashMap<String,String>> persons) {
         final StringBuilder messageAccumulator = new StringBuilder();
@@ -668,7 +692,6 @@ public class AddressBook {
 
     /**
      * Constructs a prettified listing element message to represent a person and their data.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param visibleIndex visible index for this listing
      * @param person to show
@@ -681,7 +704,6 @@ public class AddressBook {
 
     /**
      * Constructs a prettified string to show the user a person's data.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person to show
      * @return formatted message showing internal state
@@ -693,7 +715,6 @@ public class AddressBook {
 
     /**
      * Updates the latest person listing view the user has seen.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param newListing the new listing of persons
      */
@@ -704,7 +725,6 @@ public class AddressBook {
 
     /**
      * Retrieves the person identified by the displayed index from the last shown listing of persons.
-     * MODIFIED: String[]> into HashMap<>.
      *
      * @param lastVisibleIndex displayed index from last shown person listing
      * @return the actual person object in the last shown person listing
@@ -748,7 +768,6 @@ public class AddressBook {
     /**
      * Converts contents of a file into a list of persons.
      * Shows error messages and exits program if any errors in reading or decoding was encountered.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param filePath file to load from
      * @return the list of decoded persons
@@ -785,14 +804,13 @@ public class AddressBook {
 
     /**
      * Saves all data to the file. Exits program if there is an error saving to file.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param filePath file for saving
      */
     private static void savePersonsToFile(ArrayList<HashMap<String,String>> persons, String filePath) {
         final ArrayList<String> linesToWrite = encodePersonsToStrings(persons);
         try {
-            Files.write(Paths.get(storageFilePath), linesToWrite);
+            Files.write(Paths.get(filePath), linesToWrite);
         } catch (IOException ioe) {
             showToUser(msg -> System.out.println(LINE_PREFIX + msg), String.format(MESSAGE_ERROR_WRITING_TO_FILE,
                     filePath));
@@ -809,7 +827,6 @@ public class AddressBook {
 
     /**
      * Adds a person to the address book. Saves changes to storage file.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person to add
      */
@@ -820,7 +837,6 @@ public class AddressBook {
 
     /**
      * Deletes the specified person from the addressbook if it is inside. Saves any changes to storage file.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param exactPerson the actual person inside the address book (exactPerson == the person to delete in the full list)
      * @return true if the given person was found and deleted in the model
@@ -835,7 +851,6 @@ public class AddressBook {
 
     /**
      * Returns all persons in the address book
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      */
     private static ArrayList<HashMap<String,String>> getAllPersonsInAddressBook() {
         return ALL_PERSONS;
@@ -851,13 +866,30 @@ public class AddressBook {
 
     /**
      * Resets the internal model with the given data. Does not save to file.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param persons list of persons to initialise the model with
      */
     private static void initialiseAddressBookModel(ArrayList<HashMap<String,String>> persons) {
         ALL_PERSONS.clear();
         ALL_PERSONS.addAll(persons);
+    }
+
+    /**
+     * Imports and merges all persons data from the backup file, and save changes to file.
+     *
+     * @param backup list of persons stored in the previous backup file
+     */
+    private static void mergeBackupAddressBookModel(ArrayList<HashMap<String,String>> backup) {
+        ALL_PERSONS.addAll(backup);
+        savePersonsToFile(getAllPersonsInAddressBook(), storageFilePath);
+    }
+
+    /**
+     * Creates a backup of current list of person data by saving it into the backup file.
+     */
+    private static void createBackup() {
+        createFileIfMissing(backupFilePath);
+        savePersonsToFile(getAllPersonsInAddressBook(), backupFilePath);
     }
 
 
@@ -869,7 +901,6 @@ public class AddressBook {
 
     /**
      * Returns the given person's name
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person whose name you want
      */
@@ -879,7 +910,6 @@ public class AddressBook {
 
     /**
      * Returns given person's phone number
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person whose phone number you want
      */
@@ -889,7 +919,6 @@ public class AddressBook {
 
     /**
      * Returns given person's email
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person whose email you want
      */
@@ -899,7 +928,6 @@ public class AddressBook {
 
     /**
      * Creates a person from the given data.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param name of person
      * @param phone without data prefix
@@ -916,7 +944,6 @@ public class AddressBook {
 
     /**
      * Encodes a person into a decodable and readable string representation.
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person to be encoded
      * @return encoded string
@@ -928,8 +955,6 @@ public class AddressBook {
 
     /**
      * Encodes list of persons into list of decodable and readable string representations.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>> line.905.
-     * MODIFIED: String[]> into HashMap<> line.908.
      *
      * @param persons to be encoded
      * @return encoded strings
@@ -951,8 +976,6 @@ public class AddressBook {
 
     /**
      * Decodes a person from it's supposed string representation.
-     * MODIFIED: String[] into HashMap<>.
-     * MODIFIED: Optional<String[]> into Optional<HashMap<>>.
      *
      * @param encoded string to be decoded
      * @return if cannot decode: empty Optional
@@ -974,8 +997,6 @@ public class AddressBook {
 
     /**
      * Decodes persons from a list of string representations.
-     * MODIFIED: Optional<String[]> into Optional<HashMap<>>.
-     * MODIFIED: ArrayList<String[]> into ArrayList<HashMap<>>.
      *
      * @param encodedPersons strings to be decoded
      * @return if cannot decode any: empty Optional
@@ -1070,7 +1091,6 @@ public class AddressBook {
 
     /**
      * Returns true if the given person's data fields are valid
-     * MODIFIED: String[] into HashMap<>.
      *
      * @param person String array representing the person (used in internal data)
      */
@@ -1133,6 +1153,8 @@ public class AddressBook {
                 + getUsageInfoForViewCommand() + LS
                 + getUsageInfoForDeleteCommand() + LS
                 + getUsageInfoForClearCommand() + LS
+                + getUsageInfoForBackupCommand() + LS
+                + getUsageInfoForImportCommand() + LS
                 + getUsageInfoForExitCommand() + LS
                 + getUsageInfoForHelpCommand();
     }
@@ -1175,6 +1197,17 @@ public class AddressBook {
         return String.format(MESSAGE_COMMAND_HELP, COMMAND_HELP_WORD, COMMAND_HELP_DESC)
                 + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_HELP_EXAMPLE);
     }
+
+    private static String getUsageInfoForBackupCommand() {
+        return String.format(MESSAGE_COMMAND_HELP, COMMAND_BACKUP_WORD, COMMAND_BACKUP_DESC) + LS
+                + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_BACKUP_EXAMPLE) + LS;
+    }
+
+    private static String getUsageInfoForImportCommand() {
+        return String.format(MESSAGE_COMMAND_HELP, COMMAND_IMPORT_WORD, COMMAND_IMPORT_DESC) + LS
+                + String.format(MESSAGE_COMMAND_HELP_EXAMPLE, COMMAND_IMPORT_EXAMPLE) + LS;
+    }
+
 
     /** Returns the string for showing 'exit' command usage instruction */
     private static String getUsageInfoForExitCommand() {
